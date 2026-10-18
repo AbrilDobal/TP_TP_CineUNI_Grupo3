@@ -63,6 +63,13 @@ void bajaPelicula(NodoPelicula*& lista, Sala salas[], int cantSalas);
 void buscarPorClasificacion(NodoPelicula* lista);
 void guardarYLiberarPeliculas(NodoPelicula*& lista);
 
+// Módulo B - Salas
+bool cargarSalas(Sala salas[], int& cantSalas);
+int buscarSala(Sala salas[], int cantSalas, int nroSala);
+bool cargarSalas(Sala salas[], int& cantSalas);
+int buscarSala(Sala salas[], int cantSalas, int nroSala);
+void mostrarPlanoSala(Sala salas[], int cantSalas, NodoPelicula* listaPeliculas);
+
 //Cola de boleteria
 void encolarCliente(NodoCliente*& colafte, NodoCliente*& colafin, Cliente c);
 Cliente desencolarCliente(NodoCliente*& colafte, NodoCliente*& colafin);

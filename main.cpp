@@ -10,16 +10,12 @@ int main(int argc, char** argv) {
 	//Carga inicial de la cartelera (Modulo A)
 	NodoPelicula* listaPeliculas = cargarPeliculas();
 
-	//TEMPORAL: lectura minima de salas.dat solo para poder probar este modulo.
-	//Se reemplaza por cargarSalas() del Modulo B cuando se integre el codigo.
+	// Carga inicial de las salas (Modulo B)
 	Sala salas[MAX_SALAS];
 	int cantSalas = 0;
-	FILE* archSalas = fopen("salas.dat","rb");
-	if(archSalas != NULL){
-		while(cantSalas < MAX_SALAS && fread(&salas[cantSalas],sizeof(Sala),1,archSalas) == 1){
-			cantSalas++;
-		}
-		fclose(archSalas);
+
+	if(!cargarSalas(salas,cantSalas)){
+		cout << "No se pudieron cargar las salas." << endl;
 	}
 
 	NodoCliente* colafte = NULL;
@@ -35,6 +31,7 @@ int main(int argc, char** argv) {
 		cout << "4. Buscar por clasificacion" << endl;
 		cout << "5. Llegada de un cliente" << endl;
 		cout << "6. Ver la fila" << endl;
+		cout << "7. Ver plano de una sala" << endl;
 		cout << "0. Salir" << endl;
 		cout << "Opcion: ";
 		cin >> opcion;
@@ -46,6 +43,7 @@ int main(int argc, char** argv) {
 			case 4: buscarPorClasificacion(listaPeliculas); break;
 			case 5: llegadaCliente(colafte,colafin,listaPeliculas,salas,cantSalas); break;
 			case 6: verFila(colafte,colafin); break;
+			case 7: mostrarPlanoSala(salas, cantSalas, listaPeliculas); break;
 			case 0: cout << "Cerrando el sistema..." << endl; break;
 			default: cout << "Opcion invalida" << endl;
 		}

@@ -236,7 +236,6 @@ void guardarYLiberarPeliculas(NodoPelicula*& lista){
 }
 
 
-
 //==================================================
 // Cola de boleteria + C.1 y C.2
 //==================================================
@@ -335,3 +334,91 @@ void leerTexto(char destino[], int maxLen) {
     }
 }
 
+
+//==================================================
+// Módulo B - Salas
+//==================================================
+
+// Punto B.1: Carga inicial de las salas
+bool cargarSalas(Sala salas[], int& cantSalas) {
+    FILE* arch = fopen("salas.dat","rb");
+
+    cantSalas = 0;
+
+    if(arch == NULL){
+        cout << "No se pudo abrir salas.dat" << endl;
+        return false;
+    }
+
+    while(cantSalas < MAX_SALAS &&
+          fread(&salas[cantSalas],sizeof(Sala),1,arch) == 1){
+        cantSalas++;
+    }
+
+    fclose(arch);
+
+    return true;
+}
+
+// Busca una sala por numero y devuelve la posicion en el vector
+int buscarSala(Sala salas[], int cantSalas, int nroSala) {
+    int i = 0;
+
+    while(i < cantSalas && salas[i].nroSala != nroSala){
+        i++;
+    }
+
+    if(i < cantSalas){
+        return i;
+    } else {
+        return -1;
+    }
+}
+
+// Punto B.2: Muestra el plano grafico de una sala
+void mostrarPlanoSala(Sala salas[], int cantSalas, NodoPelicula* listaPeliculas) {
+    int nroSala;
+
+    cout << "Ingrese el numero de sala: ";
+    cin >> nroSala;
+
+    int pos = buscarSala(salas, cantSalas, nroSala);
+
+    if(pos == -1){
+        cout << "No existe una sala con ese numero" << endl;
+        return;
+    }
+
+    cout << endl;
+    cout << "========== PLANO DE LA SALA " << nroSala << " ==========" << endl;
+
+    NodoPelicula* pelicula = buscarPelicula(listaPeliculas, salas[pos].codPelicula);
+
+    if(pelicula != NULL){
+        cout << "Pelicula: " << pelicula->info.titulo << endl;
+    } else {
+        cout << "No se encontro la pelicula asignada a esta sala" << endl;
+    }
+
+    cout << endl;
+
+    cout << "   ";
+    for(int j = 0; j < salas[pos].columnas; j++){
+        cout << "\t" << j + 1;
+    }
+    cout << endl;
+
+    for(int i = 0; i < salas[pos].filas; i++){
+        cout << char('A' + i) << "  ";
+
+        for(int j = 0; j < salas[pos].columnas; j++){
+            if(salas[pos].asientos[i][j] == 0){
+                cout << "\t[ ]";
+            } else {
+                cout << "\t[X]";
+            }
+        }
+
+        cout << endl;
+    }
+}
