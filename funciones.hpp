@@ -64,15 +64,20 @@ void buscarPorClasificacion(NodoPelicula* lista);
 void guardarYLiberarPeliculas(NodoPelicula*& lista);
 
 // Módulo B - Salas
+// Punto B.1: Se hace la carga inicial de las salsa
 bool cargarSalas(Sala salas[], int& cantSalas);
-int buscarSala(Sala salas[], int cantSalas, int nroSala);
-bool cargarSalas(Sala salas[], int& cantSalas);
+// Busca una sala por numero y devuelve la posicion en el vector
+// Punto B.2: Muestra el plano grafico de una sala
 int buscarSala(Sala salas[], int cantSalas, int nroSala);
 void mostrarPlanoSala(Sala salas[], int cantSalas, NodoPelicula* listaPeliculas);
+// Punto B.3: Muestra las estadisticas de ocupacion de una sala
 void mostrarEstadisticasSala(Sala salas[], int cantSalas);
+// Punto B.4: Busqueda de asientos contiguos
 bool buscarAsientosContiguos(Sala salas[], int cantSalas, int posSala, int cantidad, int filasAsientos[], int columnasAsientos[]);
 void consultarAsientosContiguos(Sala salas[], int cantSalas);
+// Punto B.5
 bool actualizarSalaArchivo(Sala salas[], int cantSalas, int posSala);
+// Pünto B.6
 void cambiarPeliculaSala(Sala salas[], int cantSalas, NodoPelicula* listaPeliculas);
 // Punto C.3.3 (Se relaciona con B.4)
 bool buscarAsientosSeparados(Sala salas[], int cantSalas, int posSala, int cantidad, int filasAsientos[], int columnasAsientos[]);

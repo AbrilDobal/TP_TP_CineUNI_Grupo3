@@ -338,8 +338,6 @@ void leerTexto(char destino[], int maxLen) {
 //==================================================
 // Módulo B - Salas
 //==================================================
-
-// Punto B.1: Carga inicial de las salas
 bool cargarSalas(Sala salas[], int& cantSalas) {
     FILE* arch = fopen("salas.dat","rb");
 
@@ -350,8 +348,7 @@ bool cargarSalas(Sala salas[], int& cantSalas) {
         return false;
     }
 
-    while(cantSalas < MAX_SALAS &&
-          fread(&salas[cantSalas],sizeof(Sala),1,arch) == 1){
+    while(cantSalas < MAX_SALAS && fread(&salas[cantSalas],sizeof(Sala),1,arch) == 1){
         cantSalas++;
     }
 
@@ -360,7 +357,6 @@ bool cargarSalas(Sala salas[], int& cantSalas) {
     return true;
 }
 
-// Busca una sala por numero y devuelve la posicion en el vector
 int buscarSala(Sala salas[], int cantSalas, int nroSala) {
     int i = 0;
 
@@ -375,7 +371,6 @@ int buscarSala(Sala salas[], int cantSalas, int nroSala) {
     }
 }
 
-// Punto B.2: Muestra el plano grafico de una sala
 void mostrarPlanoSala(Sala salas[], int cantSalas, NodoPelicula* listaPeliculas) {
     int nroSala;
 
@@ -423,7 +418,7 @@ void mostrarPlanoSala(Sala salas[], int cantSalas, NodoPelicula* listaPeliculas)
     }
 }
 
-// Punto B.3: Muestra las estadisticas de ocupacion de una sala
+
 void mostrarEstadisticasSala(Sala salas[], int cantSalas) {
     int nroSala;
 
@@ -440,8 +435,7 @@ void mostrarEstadisticasSala(Sala salas[], int cantSalas) {
     int filas = salas[pos].filas;
     int columnas = salas[pos].columnas;
 
-    if(filas <= 0 || filas > MAX_FIL ||
-       columnas <= 0 || columnas > MAX_COL){
+    if(filas <= 0 || filas > MAX_FIL || columnas <= 0 || columnas > MAX_COL){
         cout << "Las dimensiones de la sala no son validas" << endl;
         return;
     }
@@ -516,6 +510,7 @@ void mostrarEstadisticasSala(Sala salas[], int cantSalas) {
          << columnaMax + 1 << " (" << maxOcupadosCol << " ocupados)" << endl;
 }
 
+
 bool buscarAsientosContiguos(Sala salas[], int cantSalas, int posSala, int cantidad, int filasAsientos[], int columnasAsientos[]) {
 
     if(posSala < 0 || posSala >= cantSalas){
@@ -525,9 +520,7 @@ bool buscarAsientosContiguos(Sala salas[], int cantSalas, int posSala, int canti
     int filas = salas[posSala].filas;
     int columnas = salas[posSala].columnas;
 
-    if(filas <= 0 || filas > MAX_FIL ||
-       columnas <= 0 || columnas > MAX_COL ||
-       cantidad <= 0 || cantidad > columnas){
+    if(filas <= 0 || filas > MAX_FIL || columnas <= 0 || columnas > MAX_COL || cantidad <= 0 || cantidad > columnas){
         return false;
     }
 
@@ -558,6 +551,7 @@ bool buscarAsientosContiguos(Sala salas[], int cantSalas, int posSala, int canti
 
     return false;
 }
+
 
 void consultarAsientosContiguos(Sala salas[], int cantSalas) {
     int nroSala;
@@ -594,7 +588,7 @@ void consultarAsientosContiguos(Sala salas[], int cantSalas) {
     }
 }
 
-// Punto C.3.3 (Se relaciona con B.4): busca asientos separados en la sala, sin importar si son contiguos
+
 bool buscarAsientosSeparados(Sala salas[], int cantSalas, int posSala, int cantidad, int filasAsientos[], int columnasAsientos[]) {
 
     if(posSala < 0 || posSala >= cantSalas){
@@ -604,9 +598,7 @@ bool buscarAsientosSeparados(Sala salas[], int cantSalas, int posSala, int canti
     int filas = salas[posSala].filas;
     int columnas = salas[posSala].columnas;
 
-    if(filas <= 0 || filas > MAX_FIL ||
-       columnas <= 0 || columnas > MAX_COL ||
-       cantidad < 1 || cantidad > 10){
+    if(filas <= 0 || filas > MAX_FIL || columnas <= 0 || columnas > MAX_COL || cantidad < 1 || cantidad > 10){
         return false;
     }
 
@@ -631,7 +623,7 @@ bool buscarAsientosSeparados(Sala salas[], int cantSalas, int posSala, int canti
     return false;
 }
 
-// Punto B.5
+
 bool actualizarSalaArchivo(Sala salas[], int cantSalas, int posSala) {
 
     if(posSala < 0 || posSala >= cantSalas){
@@ -671,7 +663,7 @@ bool actualizarSalaArchivo(Sala salas[], int cantSalas, int posSala) {
     return actualizado;
 }
 
-// Punto C.3.4 (Se relaciona con B.5): marca los asientos como ocupados en la sala y actualiza el archivo
+
 bool marcarAsientosOcupados(Sala salas[], int cantSalas, int posSala, int cantidad, int filasAsientos[], int columnasAsientos[]) {
 
     if(posSala < 0 || posSala >= cantSalas){
@@ -688,8 +680,7 @@ bool marcarAsientosOcupados(Sala salas[], int cantSalas, int posSala, int cantid
     // Verifica todas las ubicaciones antes de modificar la matriz
     for(int k = 0; k < cantidad; k++){
 
-        if(filasAsientos[k] < 0 || filasAsientos[k] >= filas ||
-           columnasAsientos[k] < 0 || columnasAsientos[k] >= columnas){
+        if(filasAsientos[k] < 0 || filasAsientos[k] >= filas || columnasAsientos[k] < 0 || columnasAsientos[k] >= columnas){
             return false;
         }
 
@@ -700,8 +691,7 @@ bool marcarAsientosOcupados(Sala salas[], int cantSalas, int posSala, int cantid
 
         // Evita recibir dos veces la misma ubicacion
         for(int m = 0; m < k; m++){
-            if(filasAsientos[k] == filasAsientos[m] &&
-               columnasAsientos[k] == columnasAsientos[m]){
+            if(filasAsientos[k] == filasAsientos[m] && columnasAsientos[k] == columnasAsientos[m]){
                 return false;
             }
         }
@@ -725,6 +715,7 @@ bool marcarAsientosOcupados(Sala salas[], int cantSalas, int posSala, int cantid
 
     return true;
 }
+
 
 void cambiarPeliculaSala(Sala salas[], int cantSalas, NodoPelicula* listaPeliculas) {
 
