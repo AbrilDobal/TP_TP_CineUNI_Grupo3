@@ -422,3 +422,376 @@ void mostrarPlanoSala(Sala salas[], int cantSalas, NodoPelicula* listaPeliculas)
         cout << endl;
     }
 }
+
+// Punto B.3: Muestra las estadisticas de ocupacion de una sala
+void mostrarEstadisticasSala(Sala salas[], int cantSalas) {
+    int nroSala;
+
+    cout << "Ingrese el numero de sala: ";
+    cin >> nroSala;
+
+    int pos = buscarSala(salas,cantSalas,nroSala);
+
+    if(pos == -1){
+        cout << "No existe una sala con ese numero" << endl;
+        return;
+    }
+
+    int filas = salas[pos].filas;
+    int columnas = salas[pos].columnas;
+
+    if(filas <= 0 || filas > MAX_FIL ||
+       columnas <= 0 || columnas > MAX_COL){
+        cout << "Las dimensiones de la sala no son validas" << endl;
+        return;
+    }
+
+    int libres = 0;
+    int ocupados = 0;
+
+    // Cuenta los asientos libres y ocupados
+    for(int i = 0; i < filas; i++){
+        for(int j = 0; j < columnas; j++){
+            if(salas[pos].asientos[i][j] == 0){
+                libres++;
+            } else if(salas[pos].asientos[i][j] == 1){
+                ocupados++;
+            }
+        }
+    }
+
+    // Calcula el porcentaje de ocupacion
+    int total = filas * columnas;
+    float porcentaje = (float)ocupados / total * 100;
+
+    // Busca la fila con mas asientos libres
+    int filaMax = 0;
+    int maxLibresFila = -1;
+
+    for(int i = 0; i < filas; i++){
+        int libresFila = 0;
+
+        for(int j = 0; j < columnas; j++){
+            if(salas[pos].asientos[i][j] == 0){
+                libresFila++;
+            }
+        }
+
+        if(libresFila > maxLibresFila){
+            maxLibresFila = libresFila;
+            filaMax = i;
+        }
+    }
+
+    // Busca la columna con mas asientos ocupados
+    int columnaMax = 0;
+    int maxOcupadosCol = -1;
+
+    for(int j = 0; j < columnas; j++){
+        int ocupadosCol = 0;
+
+        for(int i = 0; i < filas; i++){
+            if(salas[pos].asientos[i][j] == 1){
+                ocupadosCol++;
+            }
+        }
+
+        if(ocupadosCol > maxOcupadosCol){
+            maxOcupadosCol = ocupadosCol;
+            columnaMax = j;
+        }
+    }
+
+    // Muestra los resultados
+    cout << endl;
+    cout << "===== Estadisticas de la sala " << nroSala << " =====" << endl;
+    cout << "Asientos libres: " << libres << endl;
+    cout << "Asientos ocupados: " << ocupados << endl;
+    cout << "Porcentaje de ocupacion: " << porcentaje << "%" << endl;
+
+    cout << "Fila con mas asientos libres: "
+         << char('A' + filaMax) << " (" << maxLibresFila << " libres)" << endl;
+
+    cout << "Columna con mas asientos ocupados: "
+         << columnaMax + 1 << " (" << maxOcupadosCol << " ocupados)" << endl;
+}
+
+bool buscarAsientosContiguos(Sala salas[], int cantSalas, int posSala, int cantidad, int filasAsientos[], int columnasAsientos[]) {
+
+    if(posSala < 0 || posSala >= cantSalas){
+        return false;
+    }
+
+    int filas = salas[posSala].filas;
+    int columnas = salas[posSala].columnas;
+
+    if(filas <= 0 || filas > MAX_FIL ||
+       columnas <= 0 || columnas > MAX_COL ||
+       cantidad <= 0 || cantidad > columnas){
+        return false;
+    }
+
+    for(int i = 0; i < filas; i++){
+        int consecutivos = 0;
+
+        for(int j = 0; j < columnas; j++){
+
+            if(salas[posSala].asientos[i][j] == 0){
+                consecutivos++;
+
+                if(consecutivos == cantidad){
+                    int primeraColumna = j - cantidad + 1;
+
+                    for(int k = 0; k < cantidad; k++){
+                        filasAsientos[k] = i;
+                        columnasAsientos[k] = primeraColumna + k;
+                    }
+
+                    return true;
+                }
+
+            } else {
+                consecutivos = 0;
+            }
+        }
+    }
+
+    return false;
+}
+
+void consultarAsientosContiguos(Sala salas[], int cantSalas) {
+    int nroSala;
+    int cantidad;
+
+    cout << "Ingrese el numero de sala: ";
+    cin >> nroSala;
+
+    int posSala = buscarSala(salas,cantSalas,nroSala);
+
+    if(posSala == -1){
+        cout << "No existe una sala con ese numero" << endl;
+        return;
+    }
+
+    cout << "Ingrese la cantidad de asientos que necesita: ";
+    cin >> cantidad;
+
+    if(cantidad < 1 || cantidad > 10){
+        cout << "La cantidad debe estar entre 1 y 10" << endl;
+        return;
+    }
+
+    int filasAsientos[10];
+    int columnasAsientos[10];
+
+    if(buscarAsientosContiguos(salas,cantSalas,posSala,cantidad,filasAsientos,columnasAsientos)){
+        cout << "Se encontraron asientos contiguos." << endl;
+        cout << "Fila " << char('A' + filasAsientos[0]);
+        cout << ", asientos " << columnasAsientos[0] + 1;
+        cout << " a " << columnasAsientos[cantidad - 1] + 1 << endl;
+    } else {
+        cout << "No hay suficientes asientos contiguos en esa sala." << endl;
+    }
+}
+
+// Punto C.3.3 (Se relaciona con B.4): busca asientos separados en la sala, sin importar si son contiguos
+bool buscarAsientosSeparados(Sala salas[], int cantSalas, int posSala, int cantidad, int filasAsientos[], int columnasAsientos[]) {
+
+    if(posSala < 0 || posSala >= cantSalas){
+        return false;
+    }
+
+    int filas = salas[posSala].filas;
+    int columnas = salas[posSala].columnas;
+
+    if(filas <= 0 || filas > MAX_FIL ||
+       columnas <= 0 || columnas > MAX_COL ||
+       cantidad < 1 || cantidad > 10){
+        return false;
+    }
+
+    int encontrados = 0;
+
+    for(int i = 0; i < filas; i++){
+        for(int j = 0; j < columnas; j++){
+
+            if(salas[posSala].asientos[i][j] == 0){
+                filasAsientos[encontrados] = i;
+                columnasAsientos[encontrados] = j;
+
+                encontrados++;
+
+                if(encontrados == cantidad){
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+// Punto B.5
+bool actualizarSalaArchivo(Sala salas[], int cantSalas, int posSala) {
+
+    if(posSala < 0 || posSala >= cantSalas){
+        return false;
+    }
+
+    int nroSala = salas[posSala].nroSala;
+
+    if(nroSala < 1 || nroSala > MAX_SALAS){
+        cout << "El numero de sala no es valido" << endl;
+        return false;
+    }
+
+    FILE* arch = fopen("salas.dat","r+b");
+
+    if(arch == NULL){
+        cout << "No se pudo abrir salas.dat para actualizar" << endl;
+        return false;
+    }
+
+    long desplazamiento = (long)(nroSala - 1) * sizeof(Sala);
+
+    if(fseek(arch,desplazamiento,SEEK_SET) != 0){
+        cout << "No se pudo posicionar en el registro de la sala" << endl;
+        fclose(arch);
+        return false;
+    }
+
+    bool actualizado = (fwrite(&salas[posSala],sizeof(Sala),1,arch) == 1);
+
+    if(!actualizado){
+        cout << "No se pudo actualizar la sala en el archivo" << endl;
+    }
+
+    fclose(arch);
+
+    return actualizado;
+}
+
+// Punto C.3.4 (Se relaciona con B.5): marca los asientos como ocupados en la sala y actualiza el archivo
+bool marcarAsientosOcupados(Sala salas[], int cantSalas, int posSala, int cantidad, int filasAsientos[], int columnasAsientos[]) {
+
+    if(posSala < 0 || posSala >= cantSalas){
+        return false;
+    }
+
+    int filas = salas[posSala].filas;
+    int columnas = salas[posSala].columnas;
+
+    if(cantidad < 1 || cantidad > 10){
+        return false;
+    }
+
+    // Verifica todas las ubicaciones antes de modificar la matriz
+    for(int k = 0; k < cantidad; k++){
+
+        if(filasAsientos[k] < 0 || filasAsientos[k] >= filas ||
+           columnasAsientos[k] < 0 || columnasAsientos[k] >= columnas){
+            return false;
+        }
+
+        if(salas[posSala].asientos[filasAsientos[k]][columnasAsientos[k]] != 0){
+            cout << "Uno de los asientos seleccionados ya no esta libre" << endl;
+            return false;
+        }
+
+        // Evita recibir dos veces la misma ubicacion
+        for(int m = 0; m < k; m++){
+            if(filasAsientos[k] == filasAsientos[m] &&
+               columnasAsientos[k] == columnasAsientos[m]){
+                return false;
+            }
+        }
+    }
+
+    // Marca los asientos como ocupados
+    for(int k = 0; k < cantidad; k++){
+        salas[posSala].asientos[filasAsientos[k]][columnasAsientos[k]] = 1;
+    }
+
+    // Actualiza el registro correspondiente en salas.dat
+    if(!actualizarSalaArchivo(salas,cantSalas,posSala)){
+
+        // Si falla la actualizacion, revierte los cambios en memoria
+        for(int k = 0; k < cantidad; k++){
+            salas[posSala].asientos[filasAsientos[k]][columnasAsientos[k]] = 0;
+        }
+
+        return false;
+    }
+
+    return true;
+}
+
+void cambiarPeliculaSala(Sala salas[], int cantSalas, NodoPelicula* listaPeliculas) {
+
+    int nroSala;
+
+    cout << "Ingrese el numero de sala: ";
+    cin >> nroSala;
+
+    int pos = buscarSala(salas,cantSalas,nroSala);
+
+    if(pos == -1){
+        cout << "No existe una sala con ese numero" << endl;
+        return;
+    }
+
+    // Verifica que las dimensiones de la sala sean validas
+    int filas = salas[pos].filas;
+    int columnas = salas[pos].columnas;
+
+    if(filas <= 0 || filas > MAX_FIL ||
+       columnas <= 0 || columnas > MAX_COL){
+        cout << "Las dimensiones de la sala no son validas" << endl;
+        return;
+    }
+
+    // Verifica que todos los asientos esten libres
+    bool salaVacia = true;
+
+    for(int i = 0; i < filas && salaVacia; i++){
+        for(int j = 0; j < columnas && salaVacia; j++){
+            if(salas[pos].asientos[i][j] != 0){
+                salaVacia = false;
+            }
+        }
+    }
+
+    if(!salaVacia){
+        cout << "No se puede cambiar la pelicula: la sala tiene asientos ocupados" << endl;
+        return;
+    }
+
+    // Solicita el codigo de la nueva pelicula
+    int codigoNuevo;
+
+    cout << "Ingrese el codigo de la nueva pelicula: ";
+    cin >> codigoNuevo;
+
+    NodoPelicula* pelicula = buscarPelicula(listaPeliculas,codigoNuevo);
+
+    if(pelicula == NULL){
+        cout << "No existe una pelicula con ese codigo" << endl;
+        return;
+    }
+
+    // Guarda el codigo anterior por si falla la actualizacion
+    int codigoAnterior = salas[pos].codPelicula;
+
+    // Modifica la pelicula asignada en memoria
+    salas[pos].codPelicula = codigoNuevo;
+
+    // Actualiza el registro de la sala en el archivo
+    if(!actualizarSalaArchivo(salas,cantSalas,pos)){
+        salas[pos].codPelicula = codigoAnterior;
+        cout << "No se pudo guardar el cambio en salas.dat" << endl;
+        return;
+    }
+
+    cout << "Pelicula de la sala " << nroSala << " cambiada correctamente" << endl;
+    cout << "Nueva pelicula: " << pelicula->info.titulo << endl;
+}

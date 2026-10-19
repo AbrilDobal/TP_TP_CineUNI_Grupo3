@@ -69,6 +69,15 @@ int buscarSala(Sala salas[], int cantSalas, int nroSala);
 bool cargarSalas(Sala salas[], int& cantSalas);
 int buscarSala(Sala salas[], int cantSalas, int nroSala);
 void mostrarPlanoSala(Sala salas[], int cantSalas, NodoPelicula* listaPeliculas);
+void mostrarEstadisticasSala(Sala salas[], int cantSalas);
+bool buscarAsientosContiguos(Sala salas[], int cantSalas, int posSala, int cantidad, int filasAsientos[], int columnasAsientos[]);
+void consultarAsientosContiguos(Sala salas[], int cantSalas);
+bool actualizarSalaArchivo(Sala salas[], int cantSalas, int posSala);
+void cambiarPeliculaSala(Sala salas[], int cantSalas, NodoPelicula* listaPeliculas);
+// Punto C.3.3 (Se relaciona con B.4)
+bool buscarAsientosSeparados(Sala salas[], int cantSalas, int posSala, int cantidad, int filasAsientos[], int columnasAsientos[]);
+// Punto C.3.4 (Se relaciona con B.5)
+bool marcarAsientosOcupados(Sala salas[], int cantSalas, int posSala, int cantidad, int filasAsientos[], int columnasAsientos[]);
 
 //Cola de boleteria
 void encolarCliente(NodoCliente*& colafte, NodoCliente*& colafin, Cliente c);

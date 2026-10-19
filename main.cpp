@@ -32,6 +32,9 @@ int main(int argc, char** argv) {
 		cout << "5. Llegada de un cliente" << endl;
 		cout << "6. Ver la fila" << endl;
 		cout << "7. Ver plano de una sala" << endl;
+		cout << "8. Ver estadisticas de una sala" << endl;
+		cout << "9. Buscar asientos contiguos" << endl;
+		cout << "10. Cambiar pelicula de una sala" << endl;
 		cout << "0. Salir" << endl;
 		cout << "Opcion: ";
 		cin >> opcion;
@@ -44,6 +47,9 @@ int main(int argc, char** argv) {
 			case 5: llegadaCliente(colafte,colafin,listaPeliculas,salas,cantSalas); break;
 			case 6: verFila(colafte,colafin); break;
 			case 7: mostrarPlanoSala(salas, cantSalas, listaPeliculas); break;
+			case 8: mostrarEstadisticasSala(salas,cantSalas); break;
+			case 9: consultarAsientosContiguos(salas,cantSalas); break;
+			case 10: cambiarPeliculaSala(salas,cantSalas,listaPeliculas); break;
 			case 0: cout << "Cerrando el sistema..." << endl; break;
 			default: cout << "Opcion invalida" << endl;
 		}
