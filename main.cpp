@@ -62,6 +62,7 @@ int main(int argc, char** argv) {
 		cout << "0. Salir" << endl;
 		cout << "Opcion: ";
 		cin >> opcion;
+		cin.ignore(10000, '\n'); // Limpia el buffer para que no afecte la lectura de textos posterior		
 
 		switch(opcion){
 			case 1: listarCartelera(listaPeliculas); break;
