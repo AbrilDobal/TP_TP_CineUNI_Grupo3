@@ -808,7 +808,7 @@ int obtenerProximoNroVenta() {
     
     Venta ultimaVenta;
     // Nos posicionamos al final menos el tamaño de un registro Venta
-    fseek(arch, -sizeof(Venta), SEEK_END); 
+    fseek(arch, -static_cast<long>(sizeof(Venta)), SEEK_END);
     
     int leidos = fread(&ultimaVenta, sizeof(Venta), 1, arch);
     fclose(arch);
