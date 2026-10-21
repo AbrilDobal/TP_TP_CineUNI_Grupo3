@@ -5,24 +5,6 @@
 #include "funciones.hpp"
 using namespace std;
 
-// struct Venta {
-//     int   nroVenta;
-//     char  cliente[40];
-//     int   codPelicula;
-//     int   nroSala;
-//     int   cantidad;
-//     int   fila[10];          // asientos asignados
-//     int   columna[10];
-//     float importe;
-// };
-
-// struct ResumenPelicula {
-//     int   codigo;
-//     char  titulo[50];
-//     int   entradasVendidas;
-//     float recaudacion;
-// };
-
 
 //==================================================
 // Módulo A - Cartelera
@@ -785,4 +767,474 @@ void cambiarPeliculaSala(Sala salas[], int cantSalas, NodoPelicula* listaPelicul
 
     cout << "Pelicula de la sala " << nroSala << " cambiada correctamente" << endl;
     cout << "Nueva pelicula: " << pelicula->info.titulo << endl;
+}
+
+
+
+//==================================================
+// TDA Pila - Operaciones de Ventas 
+//==================================================
+
+bool pilaVacia(NodoVenta* pila) {
+    return pila == NULL; // Retorna true si la pila está vacía
+}
+
+void apilar(NodoVenta*& pila, Venta v) {
+    NodoVenta* nuevo = new NodoVenta();
+    nuevo->info = v;
+    nuevo->sgte = pila; // El nuevo nodo apunta al que antes era el tope
+    pila = nuevo;       // El tope de la pila ahora es el nuevo nodo
+}
+
+Venta desapilar(NodoVenta*& pila) {
+    Venta ret = pila->info;     // Guardamos la información a devolver
+    NodoVenta* aux = pila;      // Apuntamos al nodo a eliminar
+    pila = pila->sgte;          // El tope pasa a ser el siguiente nodo
+    delete aux;                 // Liberamos la memoria
+    return ret;                 // Retornamos la venta
+}
+
+//==================================================
+// Módulo D y C.8 - Preparación de la jornada
+//==================================================
+
+// Punto C.8: Numeración correlativa con fseek inverso
+int obtenerProximoNroVenta() {
+    FILE* arch = fopen("ventas.dat", "rb");
+    
+    if (arch == NULL) {
+        return 1; // Si el archivo no existe, es la primera venta del sistema
+    }
+    
+    Venta ultimaVenta;
+    // Nos posicionamos al final menos el tamaño de un registro Venta
+    fseek(arch, -sizeof(Venta), SEEK_END); 
+    
+    int leidos = fread(&ultimaVenta, sizeof(Venta), 1, arch);
+    fclose(arch);
+    
+    if (leidos == 1) {
+        return ultimaVenta.nroVenta + 1; // Continuamos desde el último
+    } else {
+        return 1; // Por si el archivo existe pero está vacío
+    }
+}
+
+// Módulo D: Prepara el vector de películas leyendo la cartelera actual
+void inicializarEstadisticasPeliculas(NodoPelicula* lista, ResumenPelicula stats[], int& cantStats) {
+    cantStats = 0;
+    NodoPelicula* aux = lista;
+    
+    while (aux != NULL) {
+        stats[cantStats].codigo = aux->info.codigo;
+        strcpy(stats[cantStats].titulo, aux->info.titulo);
+        stats[cantStats].entradasVendidas = 0;
+        stats[cantStats].recaudacion = 0.0;
+        
+        cantStats++;
+        aux = aux->sgte;
+    }
+}
+
+//==================================================
+// Atención de Boletería (C.3)
+//==================================================
+//Analizar para modularizar
+void atenderProximoCliente(NodoCliente*& colafte, NodoCliente*& colafin, Sala salas[], int cantSalas, NodoPelicula* listaPeliculas, NodoVenta*& pilaVentas, int& proximoNroVenta, int entradasPorSala[], ResumenPelicula stats[], int cantStats) {
+    
+    if (colaClientesVacia(colafte)) {
+        cout << "No hay clientes esperando en la fila." << endl;
+        return;
+    }
+
+    // 1. Desencolamos al cliente
+    Cliente c = desencolarCliente(colafte, colafin);
+    cout << "\nAtendiendo a: " << c.nombre << " (Pelicula " << c.codPelicula << ", " << c.cantidad << " entradas)" << endl;
+
+    // 2. Buscamos la sala donde se proyecta su película
+    int posSala = -1;
+    for (int i = 0; i < cantSalas; i++) {
+        if (salas[i].codPelicula == c.codPelicula) {
+            posSala = i;
+            break;
+        }
+    }
+
+    if (posSala == -1) {
+        cout << "Error: La pelicula ya no esta asignada a ninguna sala." << endl;
+        return;
+    }
+
+    // 3. Buscamos asientos contiguos (B.4 / C.3.3)
+    int filasAsientos[10];
+    int columnasAsientos[10];
+    bool asientosEncontrados = buscarAsientosContiguos(salas, cantSalas, posSala, c.cantidad, filasAsientos, columnasAsientos);
+
+    // Si no hay contiguos, ofrecemos separados
+    if (!asientosEncontrados) {
+        cout << "No hay suficientes asientos contiguos." << endl;
+        asientosEncontrados = buscarAsientosSeparados(salas, cantSalas, posSala, c.cantidad, filasAsientos, columnasAsientos);
+        
+        if (asientosEncontrados) {
+            char respuesta;
+            cout << "Se encontraron " << c.cantidad << " asientos separados. Acepta? (S/N): ";
+            cin >> respuesta;
+            if (respuesta != 'S' && respuesta != 's') {
+                cout << "Venta cancelada por el cliente." << endl;
+                return; // Venta cancelada
+            }
+        } else {
+            cout << "No hay lugar suficiente en la sala. Venta cancelada." << endl;
+            return; // No hay lugar ni siquiera separado
+        }
+    }
+
+    // 4. Marcamos los asientos y guardamos en salas.dat (C.3.4 y B.5)
+    if (!marcarAsientosOcupados(salas, cantSalas, posSala, c.cantidad, filasAsientos, columnasAsientos)) {
+        cout << "Hubo un error al marcar los asientos. Venta cancelada." << endl;
+        return;
+    }
+
+    // 5. Armamos el registro Venta y calculamos el importe
+    NodoPelicula* peli = buscarPelicula(listaPeliculas, c.codPelicula);
+    float importeTotal = c.cantidad * peli->info.precio;
+
+    Venta nuevaVenta;
+    nuevaVenta.nroVenta = proximoNroVenta;
+    strcpy(nuevaVenta.cliente, c.nombre);
+    nuevaVenta.codPelicula = c.codPelicula;
+    nuevaVenta.nroSala = salas[posSala].nroSala;
+    nuevaVenta.cantidad = c.cantidad;
+    nuevaVenta.importe = importeTotal;
+    
+    for (int k = 0; k < c.cantidad; k++) {
+        nuevaVenta.fila[k] = filasAsientos[k];
+        nuevaVenta.columna[k] = columnasAsientos[k];
+    }
+
+    // 6. Apilamos la venta (Pila dinámica)
+    apilar(pilaVentas, nuevaVenta);
+
+    // 7. Actualizamos los vectores de la jornada (Módulo D)
+    entradasPorSala[salas[posSala].nroSala - 1] += c.cantidad;
+    
+    for (int i = 0; i < cantStats; i++) {
+        if (stats[i].codigo == c.codPelicula) {
+            stats[i].entradasVendidas += c.cantidad;
+            stats[i].recaudacion += importeTotal;
+            break;
+        }
+    }
+
+    // 8. Informamos éxito, incrementamos NroVenta y mostramos ubicaciones
+    proximoNroVenta++;
+    cout << "\nVenta Exitosa - Ticket Nro: " << nuevaVenta.nroVenta << endl;
+    cout << "Importe Total: $" << importeTotal << endl;
+    cout << "Asientos asignados en Sala " << nuevaVenta.nroSala << ":" << endl;
+    for (int k = 0; k < c.cantidad; k++) {
+        cout << "- Fila " << char('A' + nuevaVenta.fila[k]) << ", Asiento " << nuevaVenta.columna[k] + 1 << endl;
+    }
+
+}
+
+//==================================================
+// Deshacer Venta e Historial (C.4 y C.5)
+//==================================================
+
+void deshacerUltimaVenta(NodoVenta*& pilaVentas, Sala salas[], int cantSalas, int& proximoNroVenta, int entradasPorSala[], ResumenPelicula stats[], int cantStats) {
+    if (pilaVacia(pilaVentas)) {
+        cout << "Error: No hay ventas registradas en esta jornada para deshacer." << endl;
+        return;
+    }
+
+    // 1. Desapilamos la última venta
+    Venta v = desapilar(pilaVentas);
+
+    // 2. Liberamos los asientos en la matriz
+    int posSala = buscarSala(salas, cantSalas, v.nroSala);
+    if (posSala != -1) {
+        for (int k = 0; k < v.cantidad; k++) {
+            salas[posSala].asientos[v.fila[k]][v.columna[k]] = 0; // 0 = libre
+        }
+        
+        // 3. Actualizamos salas.dat por acceso directo
+        if (actualizarSalaArchivo(salas, cantSalas, posSala)) {
+            cout << "Asientos liberados en la sala y archivo actualizado." << endl;
+        } else {
+            cout << "Error al actualizar el archivo de la sala." << endl;
+        }
+    }
+
+    // 4. Descontamos las entradas y la recaudación de los vectores del Módulo D
+    entradasPorSala[v.nroSala - 1] -= v.cantidad;
+
+    for (int i = 0; i < cantStats; i++) {
+        if (stats[i].codigo == v.codPelicula) {
+            stats[i].entradasVendidas -= v.cantidad;
+            stats[i].recaudacion -= v.importe;
+            break;
+        }
+    }
+
+    // 5. Retrocedemos el contador correlativo para re-usar el número de ticket
+    proximoNroVenta--;
+
+    cout << "Venta Nro " << v.nroVenta << " a nombre de " << v.cliente << " fue DESHECHA exitosamente." << endl;
+}
+
+void mostrarHistorialJornada(NodoVenta*& pilaVentas) {
+    if (pilaVacia(pilaVentas)) {
+        cout << "La jornada actual no tiene ventas registradas todavia." << endl;
+        return;
+    }
+
+    // Pila auxiliar para no perder los datos
+    NodoVenta* pilaAux = NULL;
+
+    cout << endl << "===== Historial de la Jornada (Mas reciente a mas antigua) =====" << endl;
+    
+    // 1. Desapilar de la original, mostrar y apilar en la auxiliar
+    while (!pilaVacia(pilaVentas)) {
+        Venta v = desapilar(pilaVentas);
+        
+        cout << "Ticket: " << v.nroVenta 
+             << " | Cliente: " << v.cliente 
+             << " | Pelicula: " << v.codPelicula 
+             << " | Entradas: " << v.cantidad 
+             << " | Importe: $" << v.importe << endl;
+             
+        apilar(pilaAux, v);
+    }
+
+    // 2. Devolver todo a la pila original para restaurar su estado
+    while (!pilaVacia(pilaAux)) {
+        apilar(pilaVentas, desapilar(pilaAux));
+    }
+    cout << "================================================================" << endl;
+}
+
+
+//==================================================
+// Persistencia de Ventas (C.6 y C.7)
+//==================================================
+
+// C.6: Cierre de caja al salir (volcar pila a ventas.dat en orden cronológico)
+void guardarVentasYVaciarPila(NodoVenta*& pilaVentas) {
+    if (pilaVacia(pilaVentas)) {
+        cout << "No hay ventas nuevas en esta sesion para guardar." << endl;
+        return; 
+    }
+
+    // Pila auxiliar para invertir el orden (de LIFO a FIFO / cronológico)
+    NodoVenta* pilaAux = NULL;
+
+    // Pasamos todo a la auxiliar
+    while (!pilaVacia(pilaVentas)) {
+        apilar(pilaAux, desapilar(pilaVentas));
+    }
+
+    // Abrimos el archivo en modo append binario ("ab")
+    FILE* arch = fopen("ventas.dat", "ab");
+    if (arch == NULL) {
+        cout << "Error al abrir ventas.dat para guardar." << endl;
+        return;
+    }
+
+    // Desapilamos de la auxiliar (ahora salen desde la más antigua a la más nueva) y grabamos
+    int guardadas = 0;
+    while (!pilaVacia(pilaAux)) {
+        Venta v = desapilar(pilaAux);
+        fwrite(&v, sizeof(Venta), 1, arch);
+        guardadas++;
+    }
+
+    fclose(arch);
+    cout << "Cierre de caja: Se guardaron " << guardadas << " ventas en ventas.dat de forma cronologica." << endl;
+}
+
+// C.7: Historial completo acumulado
+void mostrarHistorialCompleto() {
+    FILE* arch = fopen("ventas.dat", "rb");
+    if (arch == NULL) {
+        cout << "No hay un historial de ventas anterior (el archivo aun no existe)." << endl;
+        return;
+    }
+
+    Venta v;
+    int totalVentas = 0;
+    float montoAcumulado = 0.0;
+
+    cout << endl << "===== Historial Completo de Ventas (Historico) =====" << endl;
+    
+    // Leemos secuencialmente (rápido y simple)
+    fread(&v, sizeof(Venta), 1, arch);
+    while (!feof(arch)) {
+        cout << "Ticket: " << v.nroVenta 
+             << " | Cliente: " << v.cliente 
+             << " | Sala: " << v.nroSala
+             << " | Pelicula: " << v.codPelicula 
+             << " | Entradas: " << v.cantidad 
+             << " | Importe: $" << v.importe << endl;
+        
+        totalVentas++;
+        montoAcumulado += v.importe;
+        
+        fread(&v, sizeof(Venta), 1, arch);
+    }
+
+    fclose(arch);
+
+    cout << "----------------------------------------------------" << endl;
+    cout << "Cantidad total de ventas historicas: " << totalVentas << endl;
+    cout << "Monto total acumulado: $" << montoAcumulado << endl;
+    cout << "====================================================" << endl;
+}
+
+//==================================================
+// Módulo D - Estadísticas y Reportes
+//==================================================
+
+void mostrarEstadisticasDelDia(ResumenPelicula stats[], int cantStats, int entradasPorSala[], int cantSalas, NodoVenta* pilaVentas) {
+    if (cantStats == 0) {
+        cout << "No hay peliculas en cartelera." << endl;
+        return;
+    }
+
+    int maxEntradas = -1, minEntradas = 999999;
+    int posMaxPeli = 0, posMinPeli = 0;
+    float recaudacionTotal = 0.0;
+    int totalEntradas = 0;
+
+    // Calculamos máximos, mínimos y totales de las películas
+    for (int i = 0; i < cantStats; i++) {
+        recaudacionTotal += stats[i].recaudacion;
+        totalEntradas += stats[i].entradasVendidas;
+
+        if (stats[i].entradasVendidas > maxEntradas) {
+            maxEntradas = stats[i].entradasVendidas;
+            posMaxPeli = i;
+        }
+        if (stats[i].entradasVendidas < minEntradas) {
+            minEntradas = stats[i].entradasVendidas;
+            posMinPeli = i;
+        }
+    }
+
+    // Calculamos la sala con más ventas
+    int maxSala = -1;
+    int posMaxSala = 0;
+    for (int i = 0; i < cantSalas; i++) {
+        if (entradasPorSala[i] > maxSala) {
+            maxSala = entradasPorSala[i];
+            posMaxSala = i;
+        }
+    }
+
+    // Contamos la cantidad de ventas del día recorriendo la pila con una auxiliar
+    int cantVentas = 0;
+    NodoVenta* pilaAux = NULL;
+    while (!pilaVacia(pilaVentas)) {
+        apilar(pilaAux, desapilar(pilaVentas));
+        cantVentas++;
+    }
+    while (!pilaVacia(pilaAux)) {
+        apilar(pilaVentas, desapilar(pilaAux));
+    }
+
+    cout << endl << "===== Estadisticas del Dia =====" << endl;
+    cout << "Pelicula mas vendida: " << stats[posMaxPeli].titulo << " (" << maxEntradas << " entradas)" << endl;
+    cout << "Pelicula menos vendida: " << stats[posMinPeli].titulo << " (" << minEntradas << " entradas)" << endl;
+    cout << "Sala con mas entradas vendidas: Sala " << posMaxSala + 1 << " (" << maxSala << " entradas)" << endl;
+    cout << "Recaudacion total: $" << recaudacionTotal << endl;
+    
+    if (cantVentas > 0) {
+        cout << "Promedio de entradas por venta: " << (float)totalEntradas / cantVentas << endl;
+    } else {
+        cout << "Promedio de entradas por venta: 0" << endl;
+    }
+    cout << "================================" << endl;
+}
+
+//se podrìa modularizar
+void generarReporteRanking(ResumenPelicula stats[], int cantStats) {
+    if (cantStats == 0) {
+        cout << "No hay datos para generar el reporte." << endl;
+        return;
+    }
+
+    // 1. Crear una copia para ordenar y no romper los índices originales
+    ResumenPelicula ranking[50];
+    for (int i = 0; i < cantStats; i++) {
+        ranking[i] = stats[i];
+    }
+
+    // 2. Ordenar de mayor a menor por recaudación (Método Burbuja)
+    for (int i = 0; i < cantStats - 1; i++) {
+        for (int j = 0; j < cantStats - i - 1; j++) {
+            if (ranking[j].recaudacion < ranking[j + 1].recaudacion) {
+                ResumenPelicula aux = ranking[j];
+                ranking[j] = ranking[j + 1];
+                ranking[j + 1] = aux;
+            }
+        }
+    }
+
+    // 3. Mostrar en pantalla el Ranking
+    cout << endl << "===== Ranking de Recaudacion =====" << endl;
+    for (int i = 0; i < cantStats; i++) {
+        cout << i + 1 << ". " << ranking[i].titulo << " - $" << ranking[i].recaudacion << " (" << ranking[i].entradasVendidas << " ent.)" << endl;
+    }
+
+    // 4. Pedir fecha y generar archivo secuencial
+    char fecha[9];
+    cout << "\nIngrese la fecha para el reporte (AAAAMMDD): ";
+    cin >> fecha;
+
+    char nombreArchivo[40];
+    sprintf(nombreArchivo, "reporte_%s.dat", fecha);
+
+    FILE* arch = fopen(nombreArchivo, "wb");
+    if (arch == NULL) {
+        cout << "Error al crear el archivo de reporte." << endl;
+        return;
+    }
+
+    fwrite(ranking, sizeof(ResumenPelicula), cantStats, arch);
+    fclose(arch);
+
+    cout << "Reporte generado exitosamente: " << nombreArchivo << endl;
+}
+
+void consultarReporteGuardado() {
+    char fecha[9];
+    cout << "Ingrese la fecha del reporte a consultar (AAAAMMDD): ";
+    cin >> fecha;
+
+    char nombreArchivo[40];
+    sprintf(nombreArchivo, "reporte_%s.dat", fecha);
+
+    FILE* arch = fopen(nombreArchivo, "rb");
+    if (arch == NULL) {
+        cout << "No existe un reporte para la fecha " << fecha << "." << endl;
+        return;
+    }
+
+    cout << endl << "===== Reporte del " << fecha << " =====" << endl;
+    cout << "Codigo | Titulo | Entradas | Recaudacion" << endl;
+    cout << "------------------------------------------------" << endl;
+
+    ResumenPelicula r;
+    float totalRecaudado = 0.0;
+
+    fread(&r, sizeof(ResumenPelicula), 1, arch);
+    while (!feof(arch)) {
+        cout << r.codigo << " | " << r.titulo << " | " << r.entradasVendidas << " | $" << r.recaudacion << endl;
+        totalRecaudado += r.recaudacion;
+        fread(&r, sizeof(ResumenPelicula), 1, arch);
+    }
+
+    fclose(arch);
+    cout << "------------------------------------------------" << endl;
+    cout << "Total Recaudado en el reporte: $" << totalRecaudado << endl;
+    cout << "================================================" << endl;
 }

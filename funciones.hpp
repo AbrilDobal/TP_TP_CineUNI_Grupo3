@@ -48,6 +48,37 @@ struct NodoCliente {
 	NodoCliente* sgte;
 };
 
+
+// Registros obligatorios para el Módulo C y D
+struct Venta {
+    int   nroVenta;
+    char  cliente[40];
+    int   codPelicula;
+    int   nroSala;
+    int   cantidad;
+    int   fila[10];// asientos asignados
+    int   columna[10];
+    float importe;
+};
+
+struct ResumenPelicula {
+    int   codigo;
+    char  titulo[50];
+    int   entradasVendidas;
+    float recaudacion;
+};
+
+// TDA Pila (Dinámica) para operaciones de venta
+struct NodoVenta {
+    Venta info;
+    NodoVenta* sgte;
+};
+
+// Declaración de funciones de la Pila (Módulo C)
+void apilar(NodoVenta*& pila, Venta v);
+Venta desapilar(NodoVenta*& pila);
+bool pilaVacia(NodoVenta* pila);
+
 void leerTexto(char destino[], int maxLen);
 
 //Modulo A - Cartelera
@@ -86,9 +117,29 @@ bool marcarAsientosOcupados(Sala salas[], int cantSalas, int posSala, int cantid
 
 //Cola de boleteria
 void encolarCliente(NodoCliente*& colafte, NodoCliente*& colafin, Cliente c);
+// Punto C.3.1
 Cliente desencolarCliente(NodoCliente*& colafte, NodoCliente*& colafin);
 bool colaClientesVacia(NodoCliente* colafte);
 void llegadaCliente(NodoCliente*& colafte, NodoCliente*& colafin, NodoPelicula* listaPeliculas, Sala salas[], int cantSalas);
 void verFila(NodoCliente*& colafte, NodoCliente*& colafin);
+
+// Módulo D y C.8 - Preparación de la jornada
+int obtenerProximoNroVenta();
+void inicializarEstadisticasPeliculas(NodoPelicula* lista, ResumenPelicula stats[], int& cantStats);
+// Atención al cliente y ventas
+void atenderProximoCliente(NodoCliente*& colafte, NodoCliente*& colafin, Sala salas[], int cantSalas, NodoPelicula* listaPeliculas, NodoVenta*& pilaVentas, int& proximoNroVenta, int entradasPorSala[], ResumenPelicula stats[], int cantStats);
+
+// Operaciones de Pila - Deshacer e Historial (C.4 y C.5)
+void deshacerUltimaVenta(NodoVenta*& pilaVentas, Sala salas[], int cantSalas, int& proximoNroVenta, int entradasPorSala[], ResumenPelicula stats[], int cantStats);
+void mostrarHistorialJornada(NodoVenta*& pilaVentas);
+
+// Persistencia de Ventas (C.6 y C.7)
+void guardarVentasYVaciarPila(NodoVenta*& pilaVentas);
+void mostrarHistorialCompleto();
+
+// Módulo D - Estadísticas y Reportes
+void mostrarEstadisticasDelDia(ResumenPelicula stats[], int cantStats, int entradasPorSala[], int cantSalas, NodoVenta* pilaVentas);
+void generarReporteRanking(ResumenPelicula stats[], int cantStats);
+void consultarReporteGuardado();
 
 #endif
