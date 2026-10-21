@@ -5,7 +5,7 @@
 #include "funciones.hpp"
 using namespace std;
 
-int main(int argc, char** argv) {
+int main() {
 
 	//Carga inicial de la cartelera (Modulo A)
 	NodoPelicula* listaPeliculas = cargarPeliculas();
