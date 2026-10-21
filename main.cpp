@@ -21,6 +21,23 @@ int main(int argc, char** argv) {
 	NodoCliente* colafte = NULL;
 	NodoCliente* colafin = NULL;
 
+	// --- Preparación para el Módulo C y D ---
+	
+	// Pila de operaciones para deshacer ventas (C.4)
+	NodoVenta* pilaVentas = NULL;
+	
+	// C.8: Obtener el número correlativo de la próxima venta
+	int proximoNroVenta = obtenerProximoNroVenta();
+	
+	// Módulo D: Vectores de la jornada
+	int entradasPorSala[MAX_SALAS] = {0}; // Inicializa todas las salas en 0
+	
+	ResumenPelicula statsPeliculas[50];   // Vector de estadísticas (asumimos max 50 películas)
+	int cantPeliculasStats = 0;
+	inicializarEstadisticasPeliculas(listaPeliculas, statsPeliculas, cantPeliculasStats);
+	
+	// -------------------------------------------------------
+
 	int opcion;
 
 	do{
@@ -31,10 +48,17 @@ int main(int argc, char** argv) {
 		cout << "4. Buscar por clasificacion" << endl;
 		cout << "5. Llegada de un cliente" << endl;
 		cout << "6. Ver la fila" << endl;
-		cout << "7. Ver plano de una sala" << endl;
-		cout << "8. Ver estadisticas de una sala" << endl;
-		cout << "9. Buscar asientos contiguos" << endl;
-		cout << "10. Cambiar pelicula de una sala" << endl;
+		cout << "7. Atender al proximo cliente" << endl;
+		cout << "8. Ver plano de una sala" << endl;
+		cout << "9. Ver estadisticas de una sala" << endl;
+		cout << "10. Buscar asientos contiguos" << endl;
+		cout << "11. Cambiar pelicula de una sala" << endl;
+		cout << "12. Deshacer ultima venta" << endl;
+		cout << "13. Ver historial de la jornada" << endl;
+		cout << "14. Ver historial completo historico" << endl;
+		cout << "15. Ver estadisticas del dia" << endl;
+		cout << "16. Generar reporte de recaudacion" << endl;
+		cout << "17. Consultar reporte guardado" << endl;
 		cout << "0. Salir" << endl;
 		cout << "Opcion: ";
 		cin >> opcion;
@@ -46,11 +70,21 @@ int main(int argc, char** argv) {
 			case 4: buscarPorClasificacion(listaPeliculas); break;
 			case 5: llegadaCliente(colafte,colafin,listaPeliculas,salas,cantSalas); break;
 			case 6: verFila(colafte,colafin); break;
-			case 7: mostrarPlanoSala(salas, cantSalas, listaPeliculas); break;
-			case 8: mostrarEstadisticasSala(salas,cantSalas); break;
-			case 9: consultarAsientosContiguos(salas,cantSalas); break;
-			case 10: cambiarPeliculaSala(salas,cantSalas,listaPeliculas); break;
-			case 0: cout << "Cerrando el sistema..." << endl; break;
+			case 7: atenderProximoCliente(colafte, colafin, salas, cantSalas, listaPeliculas, pilaVentas, proximoNroVenta, entradasPorSala, statsPeliculas, cantPeliculasStats); break;
+			case 8: mostrarPlanoSala(salas, cantSalas, listaPeliculas); break;
+			case 9: mostrarEstadisticasSala(salas,cantSalas); break;
+			case 10: consultarAsientosContiguos(salas,cantSalas); break;
+			case 11: cambiarPeliculaSala(salas,cantSalas,listaPeliculas); break;
+			case 12: deshacerUltimaVenta(pilaVentas, salas, cantSalas, proximoNroVenta, entradasPorSala, statsPeliculas, cantPeliculasStats); break;
+			case 13: mostrarHistorialJornada(pilaVentas); break;
+			case 14: mostrarHistorialCompleto(); break;
+			case 15: mostrarEstadisticasDelDia(statsPeliculas, cantPeliculasStats, entradasPorSala, cantSalas, pilaVentas); break;
+			case 16: generarReporteRanking(statsPeliculas, cantPeliculasStats); break;
+			case 17: consultarReporteGuardado(); break;
+			case 0: 
+			    cout << "Cerrando el sistema..." << endl; 
+			    guardarVentasYVaciarPila(pilaVentas);
+			    break;
 			default: cout << "Opcion invalida" << endl;
 		}
 	} while(opcion != 0);
