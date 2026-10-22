@@ -35,7 +35,6 @@ int main() {
 	ResumenPelicula statsPeliculas[50];   // Vector de estadísticas (asumimos max 50 películas)
 	int cantPeliculasStats = 0;
 	inicializarEstadisticasPeliculas(listaPeliculas, statsPeliculas, cantPeliculasStats);
-	
 	// -------------------------------------------------------
 
 	int opcion;
